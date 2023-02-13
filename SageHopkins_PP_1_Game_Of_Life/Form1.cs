@@ -1,0 +1,205 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace SageHopkins_PP_1_Game_Of_Life
+{
+    public partial class Form1 : Form
+    {
+        Universe universe = new Universe(100, 50);
+        Color gridColor = Color.Black;
+        Color cellColor = Color.Gray;
+        Timer timer = new Timer();
+        int generations = 0;
+        bool running = false;
+        bool paused = false;
+        bool stopped = true;
+        bool next = false;
+        int ms = 100;
+
+        public Form1()
+        {
+            InitializeComponent();
+            timer.Interval = ms;
+            timer.Tick += Timer_Tick;
+            timer.Enabled = true;
+        }
+        private void NextGeneration()
+        {
+            generations++;
+            toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+        }
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            timer.Interval = ms;
+            if (running)
+            {
+                NextGeneration();
+                universe.nextGeneration();
+                graphicsPanel1.Invalidate();
+            }
+            else if (paused)
+            {
+                toolStripStatusLabelGenerations.Text = "Paused // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                graphicsPanel1.Invalidate();
+            }
+            else if (stopped)
+            {
+                toolStripStatusLabelGenerations.Text = "Stopped // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                graphicsPanel1.Invalidate();
+            }
+            else if (next)
+            {
+                toolStripStatusLabelGenerations.Text = "Next // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                NextGeneration();
+                universe.nextGeneration();
+                graphicsPanel1.Invalidate();
+                next = false;
+                paused = true;
+                stopped = false;
+                running = false;
+            }
+        }
+
+        private void graphicsPanel1_Paint(object sender, PaintEventArgs e)
+        {
+            int cellWidth = 15;
+            int cellHeight = 15;
+            Pen gridPen = new Pen(gridColor, 1);
+            Brush cellBrush = new SolidBrush(cellColor);
+            for (int y = 0; y < universe.universe.GetLength(1); y++)
+            {
+                for (int x = 0; x < universe.universe.GetLength(0); x++)
+                {
+                    Rectangle cellRect = Rectangle.Empty;
+                    cellRect.X = x * cellWidth;
+                    cellRect.Y = y * cellHeight;
+                    cellRect.Width = cellWidth;
+                    cellRect.Height = cellHeight;
+                    if (universe.universe[x, y].isAlive == true)
+                    {
+                        e.Graphics.FillRectangle(cellBrush, cellRect);
+                        
+                    }
+                    else
+                    {
+                        e.Graphics.FillRectangle(Brushes.White, cellRect);
+                    }
+                    StringFormat format = new StringFormat();
+                    format.LineAlignment = StringAlignment.Center;
+                    format.Alignment = StringAlignment.Center;
+                    Font font = new Font("Arial Black", 9);
+                    if (universe.universe[x, y].countNeighbors(universe) == 1)
+                    {
+                        e.Graphics.DrawString(universe.universe[x, y].countNeighbors(universe).ToString(), font, Brushes.Red, (x * cellWidth) + (cellWidth / 2), (y * cellHeight) + (cellHeight / 2), format);
+                    }
+                    else if (universe.universe[x, y].countNeighbors(universe) == 3)
+                    {
+                        e.Graphics.DrawString(universe.universe[x, y].countNeighbors(universe).ToString(), font, Brushes.Green, (x * cellWidth) + (cellWidth / 2), (y * cellHeight) + (cellHeight / 2), format);
+                    }
+                    else if (universe.universe[x, y].countNeighbors(universe) == 2)
+                    {
+                        e.Graphics.DrawString(universe.universe[x, y].countNeighbors(universe).ToString(), font, Brushes.Blue, (x * cellWidth) + (cellWidth / 2), (y * cellHeight) + (cellHeight / 2), format);
+                    }
+                    else if (universe.universe[x, y].countNeighbors(universe) > 3)
+                    {
+                        e.Graphics.DrawString(universe.universe[x, y].countNeighbors(universe).ToString(), font, Brushes.Orange, (x * cellWidth) + (cellWidth / 2), (y * cellHeight) + (cellHeight / 2), format);
+                    }
+                    e.Graphics.DrawRectangle(gridPen, cellRect.X, cellRect.Y, cellRect.Width, cellRect.Height);
+                }
+            }
+            gridPen.Dispose();
+            cellBrush.Dispose();
+        }
+
+        private void graphicsPanel1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                int cellWidth = graphicsPanel1.ClientSize.Width / universe.universe.GetLength(0);
+                int cellHeight = graphicsPanel1.ClientSize.Height / universe.universe.GetLength(1);
+                int x = e.X / cellWidth;
+                int y = e.Y / cellHeight;
+                universe.universe[x, y].isAlive = !universe.universe[x, y].isAlive;
+                graphicsPanel1.Invalidate();
+            }
+        }
+        private void startButton_Click(object sender, EventArgs e)
+        {
+            this.running = true;
+            this.paused = false;
+            this.stopped = false;
+        }
+        private void pauseButton_Click(object sender, EventArgs e) 
+        {
+            this.running = false;
+            this.paused = true;
+            this.stopped = false;
+        }
+        private void stopButton_Click(object sender, EventArgs e)
+        {
+            this.running = false;
+            this.paused = false;
+            this.stopped = true;
+        }
+
+        private void nextButton_Click(object sender, EventArgs e)
+        {
+            this.next = true;
+            this.running = false;
+            this.paused = false;
+            this.stopped = false;
+        }
+
+        private void newButton_Click(object sender, EventArgs e)
+        {
+            universe.clear();
+            graphicsPanel1.Invalidate();
+            this.next = false;
+            this.running = false;
+            this.paused = false;
+            this.stopped = true;
+        }
+        private void seedTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData != Keys.Back)
+            {
+                e.SuppressKeyPress = !int.TryParse(Convert.ToString((char)e.KeyData), out int _);
+            }
+        }
+
+        private void toolStripTextBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void seedSubmitButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                universe = new Universe(int.Parse(seedTextBox.Text.ToString()), universe.universe.GetLength(0));
+            }
+            catch
+            {
+                seedTextBox.Text = string.Empty;
+            }
+        }
+        private void timerSubmitButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ms = int.Parse(timerTextBox.Text.ToString());
+            }
+            catch
+            {
+                timerTextBox.Text = string.Empty;
+            }
+        }
+    }
+}
