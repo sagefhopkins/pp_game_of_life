@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,12 +33,13 @@ namespace SageHopkins_PP_1_Game_Of_Life
         }
         private void NextGeneration()
         {
-            generations++;
-            toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                generations++;
+                toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
         }
         private void Timer_Tick(object sender, EventArgs e)
         {
             timer.Interval = ms;
+            
             if (running)
             {
                 NextGeneration();
@@ -56,8 +58,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             }
             else if (next)
             {
-                toolStripStatusLabelGenerations.Text = "Next // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
                 NextGeneration();
+                toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
                 universe.nextGeneration();
                 graphicsPanel1.Invalidate();
                 next = false;
@@ -199,6 +201,86 @@ namespace SageHopkins_PP_1_Game_Of_Life
             catch
             {
                 timerTextBox.Text = string.Empty;
+            }
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFile = new SaveFileDialog();
+            saveFile.Filter = "Cells|*.cells";
+            saveFile.FilterIndex = 1;
+            saveFile.DefaultExt = "cells";
+
+            if (DialogResult.OK == saveFile.ShowDialog())
+            {
+                StreamWriter write = new StreamWriter(saveFile.FileName);
+                for(int i = 0; i < universe.universe.GetLength(0); i++)
+                {
+                    String row = string.Empty;
+                    for(int j = 0; j < universe.universe.GetLength(1); j++)
+                    {
+                        if (universe.universe[i, j].isAlive)
+                        {
+                            row += "0";
+                        }
+                        else
+                        {
+                            row += ".";
+                        }
+                    }
+                    write.WriteLine(row);
+                }
+                write.Close();
+            }
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFile = new OpenFileDialog();
+            openFile.Filter = "Cells|*.cells";
+            openFile.FilterIndex = 1;
+
+            if(DialogResult.OK == openFile.ShowDialog())
+            {
+                int height = 0;
+                int width = 0;
+
+                StreamReader read = new StreamReader(openFile.FileName);
+
+                while(!read.EndOfStream)
+                {
+                    string row = read.ReadLine();
+                    if(row.StartsWith("0") || row.StartsWith("."))
+                    {
+                        width = row.Length;
+                        height++;
+                    }
+                }
+
+                int rowCount = 0;
+                Cell[,] temp = new Cell[height, height];
+                while (!read.EndOfStream)
+                {
+                    string row = read.ReadLine();
+                    if (row.StartsWith("0") || row.StartsWith("."))
+                    {
+                        for (int i = 0; i < row.Length; i++)
+                        {
+                            if (row[i].ToString() == "0")
+                            {
+                                temp[i, rowCount] = new Cell((i, rowCount));
+                            }
+                            else
+                            {
+                                temp[i, rowCount] = new Cell((i, rowCount), false);
+                            }
+                        }
+                        rowCount++;
+                    }
+                }
+                universe.copyGeneration(temp);
+                read.Close();
+                graphicsPanel1.Invalidate();
             }
         }
     }

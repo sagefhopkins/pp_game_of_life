@@ -18,7 +18,7 @@ namespace SageHopkins_PP_1_Game_Of_Life
     {
         public Cell[,] universe;
         public int livingCells = 0;
-        Cell[,] scratch;
+        public Cell[,] scratch;
         Random rand;
 
         public Cell getCell((int x, int y) pos)
@@ -69,11 +69,6 @@ namespace SageHopkins_PP_1_Game_Of_Life
             }
             scratch = universe;
         }
-        /*
-         * Next Generation – To calculate the next generation of cells we need to iterate through 
-         * the universe using a couple of nested for loops and apply a few simple rules to decide 
-         * whether the corresponding cell in the scratch pad should be turned on or off.
-         */
         public void copyGeneration(Cell[,] array)
         {
             universe = new Cell[universe.GetLength(0), universe.GetLength(1)];
