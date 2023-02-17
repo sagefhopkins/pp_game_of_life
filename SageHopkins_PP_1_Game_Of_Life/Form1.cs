@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -6,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,7 +15,7 @@ namespace SageHopkins_PP_1_Game_Of_Life
 {
     public partial class Form1 : Form
     {
-        Universe universe = new Universe(100, 50);
+        Universe universe = new Universe(0, 50);
         Color gridColor = Color.Black;
         Color cellColor = Color.Gray;
         Timer timer = new Timer();
@@ -31,15 +33,18 @@ namespace SageHopkins_PP_1_Game_Of_Life
             timer.Tick += Timer_Tick;
             timer.Enabled = true;
         }
+        /*
+         * This function serves to update the status bar, as well as increment the generations past
+         */
         private void NextGeneration()
         {
-                generations++;
-                toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+            generations++;
+            toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms // Seed: " + universe.seed;
         }
         private void Timer_Tick(object sender, EventArgs e)
         {
             timer.Interval = ms;
-            
+
             if (running)
             {
                 NextGeneration();
@@ -48,18 +53,18 @@ namespace SageHopkins_PP_1_Game_Of_Life
             }
             else if (paused)
             {
-                toolStripStatusLabelGenerations.Text = "Paused // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                toolStripStatusLabelGenerations.Text = "Paused // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms // Seed: " + universe.seed;
                 graphicsPanel1.Invalidate();
             }
             else if (stopped)
             {
-                toolStripStatusLabelGenerations.Text = "Stopped // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                toolStripStatusLabelGenerations.Text = "Stopped // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms // Seed: " + universe.seed;
                 graphicsPanel1.Invalidate();
             }
             else if (next)
             {
                 NextGeneration();
-                toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms";
+                toolStripStatusLabelGenerations.Text = "Generations: " + generations.ToString() + " // Livings Cells: " + universe.livingCells.ToString() + " // Timing: " + ms.ToString() + " ms // Seed: " + universe.seed;
                 universe.nextGeneration();
                 graphicsPanel1.Invalidate();
                 next = false;
@@ -71,10 +76,12 @@ namespace SageHopkins_PP_1_Game_Of_Life
 
         private void graphicsPanel1_Paint(object sender, PaintEventArgs e)
         {
-            int cellWidth = 15;
-            int cellHeight = 15;
+            int cellWidth = 1000 / universe.universe.GetLength(0);
+            int cellHeight = 1000 / universe.universe.GetLength(1);
             Pen gridPen = new Pen(gridColor, 1);
             Brush cellBrush = new SolidBrush(cellColor);
+            this.Width = 1020;
+            this.Height = 1120;
             for (int y = 0; y < universe.universe.GetLength(1); y++)
             {
                 for (int x = 0; x < universe.universe.GetLength(0); x++)
@@ -87,7 +94,7 @@ namespace SageHopkins_PP_1_Game_Of_Life
                     if (universe.universe[x, y].isAlive == true)
                     {
                         e.Graphics.FillRectangle(cellBrush, cellRect);
-                        
+
                     }
                     else
                     {
@@ -119,7 +126,9 @@ namespace SageHopkins_PP_1_Game_Of_Life
             gridPen.Dispose();
             cellBrush.Dispose();
         }
-
+        /*
+         * This function serves to allow the user to toggle the current state of a Cell within the Universe
+         */
         private void graphicsPanel1_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -132,25 +141,36 @@ namespace SageHopkins_PP_1_Game_Of_Life
                 graphicsPanel1.Invalidate();
             }
         }
+        /*
+         * This function serves to allow the user to start the Universe, allowing it to move forward to the next generations based on the inputted tick interval
+         */
         private void startButton_Click(object sender, EventArgs e)
         {
             this.running = true;
             this.paused = false;
             this.stopped = false;
         }
-        private void pauseButton_Click(object sender, EventArgs e) 
+        /*
+         * This function serves to allow the user to pause the Universe, preventing it from continuing to the next generation
+         */
+        private void pauseButton_Click(object sender, EventArgs e)
         {
             this.running = false;
             this.paused = true;
             this.stopped = false;
         }
+        /*
+         * This function serves to allow the user to stop the Universe from moving forward to the next geneartion
+         */
         private void stopButton_Click(object sender, EventArgs e)
         {
             this.running = false;
             this.paused = false;
             this.stopped = true;
         }
-
+        /*
+         * This function serves to allow the user to move the current generation one single generation forward
+         */
         private void nextButton_Click(object sender, EventArgs e)
         {
             this.next = true;
@@ -158,7 +178,9 @@ namespace SageHopkins_PP_1_Game_Of_Life
             this.paused = false;
             this.stopped = false;
         }
-
+        /*
+         * This function serves to allow the user to generate a new empty universe
+         */
         private void newButton_Click(object sender, EventArgs e)
         {
             universe.clear();
@@ -180,7 +202,9 @@ namespace SageHopkins_PP_1_Game_Of_Life
         {
 
         }
-
+        /*
+         * This function serves to take the user input, and generate a new universe based on the seed entered.
+         */
         private void seedSubmitButton_Click(object sender, EventArgs e)
         {
             try
@@ -192,6 +216,9 @@ namespace SageHopkins_PP_1_Game_Of_Life
                 seedTextBox.Text = string.Empty;
             }
         }
+        /*
+         * This function serves to take the user input for the miliseconds between new generations, and update the timer interval to reflect the input.
+         */
         private void timerSubmitButton_Click(object sender, EventArgs e)
         {
             try
@@ -203,82 +230,61 @@ namespace SageHopkins_PP_1_Game_Of_Life
                 timerTextBox.Text = string.Empty;
             }
         }
-
+        /*
+         * This function serves to encode the current universe into a JSON array and store it based on the user's input in the Save Dialog
+         */
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveFileDialog saveFile = new SaveFileDialog();
-            saveFile.Filter = "Cells|*.cells";
-            saveFile.FilterIndex = 1;
-            saveFile.DefaultExt = "cells";
-
-            if (DialogResult.OK == saveFile.ShowDialog())
+            SaveFileDialog file = new SaveFileDialog();
+            file.Filter = "Cells|*.cells";
+            file.FilterIndex = 1;
+            file.DefaultExt = "cells";
+            if(DialogResult.OK == file.ShowDialog())
             {
-                StreamWriter write = new StreamWriter(saveFile.FileName);
+                StreamWriter write = new StreamWriter(file.FileName);
+                var json = "{ \"Height\" : \"" + universe.universe.GetLength(0) + "\",\"Width\" : \"" + universe.universe.GetLength(1) + "\",\"Cells\" : [";
+
                 for(int i = 0; i < universe.universe.GetLength(0); i++)
                 {
-                    String row = string.Empty;
                     for(int j = 0; j < universe.universe.GetLength(1); j++)
                     {
-                        if (universe.universe[i, j].isAlive)
+                        if (i == universe.universe.GetLength(0)-1 && j == universe.universe.GetLength(1)-1)
                         {
-                            row += "0";
+                            json += "{\"isAlive\" : " + universe.universe[i, j].isAlive.ToString().ToLower() + ", \"posX\" : " + universe.universe[i, j].position.x + ",\"posY\" : " + universe.universe[i, j].position.y + "}";
                         }
                         else
                         {
-                            row += ".";
+                            json += "{\"isAlive\" : " + universe.universe[i, j].isAlive.ToString().ToLower() + ", \"posX\" : " + universe.universe[i, j].position.x + ",\"posY\" : " + universe.universe[i, j].position.y + "},";
                         }
                     }
-                    write.WriteLine(row);
                 }
+                json += "]}";
+                write.Write(json);
                 write.Close();
+                }
             }
-        }
-
+        /*
+         * This function decodes an existing saved universe from a file into a JSON object, and then into the Universe object
+         */
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFile = new OpenFileDialog();
             openFile.Filter = "Cells|*.cells";
             openFile.FilterIndex = 1;
-
             if(DialogResult.OK == openFile.ShowDialog())
             {
-                int height = 0;
-                int width = 0;
-
                 StreamReader read = new StreamReader(openFile.FileName);
+                string jsonData = read.ReadToEnd();
+                var result = JsonConvert.DeserializeObject<dynamic>(jsonData);
+                int height = result.Height;
+                int width = result.Width;
+                var cells = result.Cells;
+                universe = new Universe(0, height);
 
-                while(!read.EndOfStream)
+                foreach(var cell in result.Cells)
                 {
-                    string row = read.ReadLine();
-                    if(row.StartsWith("0") || row.StartsWith("."))
-                    {
-                        width = row.Length;
-                        height++;
-                    }
+                    universe.universe[(int)cell.posX, (int)cell.posY] = new Cell(((int)cell.posX, (int)cell.posY), (bool)cell.isAlive);
                 }
-
-                int rowCount = 0;
-                Cell[,] temp = new Cell[height, height];
-                while (!read.EndOfStream)
-                {
-                    string row = read.ReadLine();
-                    if (row.StartsWith("0") || row.StartsWith("."))
-                    {
-                        for (int i = 0; i < row.Length; i++)
-                        {
-                            if (row[i].ToString() == "0")
-                            {
-                                temp[i, rowCount] = new Cell((i, rowCount));
-                            }
-                            else
-                            {
-                                temp[i, rowCount] = new Cell((i, rowCount), false);
-                            }
-                        }
-                        rowCount++;
-                    }
-                }
-                universe.copyGeneration(temp);
                 read.Close();
                 graphicsPanel1.Invalidate();
             }

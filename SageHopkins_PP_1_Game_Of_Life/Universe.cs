@@ -20,6 +20,7 @@ namespace SageHopkins_PP_1_Game_Of_Life
         public int livingCells = 0;
         public Cell[,] scratch;
         Random rand;
+        public int seed;
 
         public Cell getCell((int x, int y) pos)
         {
@@ -41,9 +42,16 @@ namespace SageHopkins_PP_1_Game_Of_Life
             }
             return universe[pos.x, pos.y];
         }
-        public Universe(int seed, int size)
+        public Universe(int seedValue, int size)
         {
+            this.seed = seedValue;
             universe = new Cell[size, size];
+            //Seed generated based on time.
+            if(seed == -1)
+            {
+                this.rand = new Random();
+                seed = rand.Next(0, 1000000);
+            }
             this.rand = new Random(seed);
             for (int i = 0; i < universe.GetLength(0); i++)
             {
