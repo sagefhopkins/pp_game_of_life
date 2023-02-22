@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,7 +7,6 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -83,6 +81,10 @@ namespace SageHopkins_PP_1_Game_Of_Life
             timer.Tick += Timer_Tick;
             //Enable the timer.
             timer.Enabled = true;
+            //Verify the settings files exist.
+            checkSettingsFiles();
+            //Load current settings.
+            loadUserSettings();
         }
 
         /*
@@ -288,7 +290,7 @@ namespace SageHopkins_PP_1_Game_Of_Life
                 //Add cell count to path variable.
                 path.AddString("Cell Count: " + universe.livingCells.ToString(), FontFamily.GenericSansSerif, (int) FontStyle.Bold, e.Graphics.DpiY * 15 / 72, new Point(5, graphicsPanel1.Bottom - 120), hudFormat);
                 //Add boundary type to path variable.
-                path.AddString("Boundary Type: " + generations.ToString(), FontFamily.GenericSansSerif, (int) FontStyle.Bold, e.Graphics.DpiY * 15 / 72, new Point(5, graphicsPanel1.Bottom - 100), hudFormat);
+                path.AddString("Toroidal: " + universe.toroidalBoundary, FontFamily.GenericSansSerif, (int) FontStyle.Bold, e.Graphics.DpiY * 15 / 72, new Point(5, graphicsPanel1.Bottom - 100), hudFormat);
                 //Add universe size to path variable.
                 path.AddString("Universe Size: " + universe.universe.GetLength(0) + ", " + universe.universe.GetLength(1), FontFamily.GenericSansSerif, (int)FontStyle.Bold, e.Graphics.DpiY * 15 / 72, new Point(5, graphicsPanel1.Bottom - 80), hudFormat);
                 //Draw the path based on the above defined strings added to the path variable. This draws the outline of the strings.
@@ -309,6 +311,429 @@ namespace SageHopkins_PP_1_Game_Of_Life
             gridPen.Dispose();
             //Dispose of cellBrush.
             cellBrush.Dispose();
+        }
+        /*
+        * The intDialog function serves to create a dialog which can be customized and reused. 
+        */
+        private int intDialog(string label, string title, int defaultValue)
+        {
+            //Create instance of the Form class.
+            Form dialog = new Form();
+            //Define dialog title.
+            dialog.Text = title;
+            //Define width of dialog.
+            dialog.Width = 500;
+            //Define height of dialog.
+            dialog.Height = 200;
+            //Create instance of Label class.
+            Label textLabel = new Label();
+            //Define left position of textLabel.
+            textLabel.Left = 50;
+            //Define top position of textLabel.
+            textLabel.Top = 20;
+            //Define text of textLabel.
+            textLabel.Text = label;
+            //Create instance of NumbericUpDown class.
+            NumericUpDown inputBox = new NumericUpDown();
+            //Define left position of inputBox.
+            inputBox.Left = 50;
+            //Define top position of inputBox.
+            inputBox.Top = 50;
+            //Define width of inputBox.
+            inputBox.Width = 400;
+            //Define Maximum value of inputBox.
+            inputBox.Maximum = int.MaxValue;
+            //Define default value of inputBox.
+            inputBox.Value = defaultValue;
+            //Create instance of Button class.
+            Button confirm = new Button();
+            //Define left position of confirm.
+            confirm.Left = 350;
+            //Define top position of confirm.
+            confirm.Top = 70;
+            //Define width of confirm.
+            confirm.Width = 100;
+            //Define text of confirm.
+            confirm.Text = "Okay";
+            //Define functionality of confirm when clicked. Closes dialog.
+            confirm.Click += (sender, e) => { dialog.Close(); };
+            //Add confirm instance to dialog.
+            dialog.Controls.Add(confirm);
+            //Add textLabel instance to dialog.
+            dialog.Controls.Add(textLabel);
+            //Add inputBox instance to dialog.
+            dialog.Controls.Add(inputBox);
+            //Show Dialog.
+            dialog.ShowDialog();
+
+            //Return inputBox's value casted to an Integer.
+            return (int)inputBox.Value;
+        }
+
+        /*
+         * The tupleDialog function serves to create a dialog which can be customized and reused. It allows the input of two seprate values.
+         */
+        private (int, int) tupleDialog(string label1, string label2, string title, (int, int) defaultValue)
+        {
+            //Create instance of Form class.
+            Form dialog = new Form();
+            //Define text of dialog.
+            dialog.Text = title;
+            //Define width of dialog.
+            dialog.Width = 500;
+            //Define height of dialog.
+            dialog.Height = 200;
+            //Create instance of Label class.
+            Label textLabel1 = new Label();
+            //Define left position of textLabel1.
+            textLabel1.Left = 50;
+            //Define top position of textLabel1.
+            textLabel1.Top = 20;
+            //Define text of textLabel1.
+            textLabel1.Text = label1;
+            //Create second instance of Label class.
+            Label textLabel2 = new Label();
+            //Define left position of textLabel2.
+            textLabel2.Left = 250;
+            //Define top position of textLabel2.
+            textLabel2.Top = 20;
+            //Define text of textLabel2.
+            textLabel2.Text = label2;
+            //Create instance of NumericUpDown class.
+            NumericUpDown inputBox1 = new NumericUpDown();
+            //Define left position of inputBox1.
+            inputBox1.Left = 50;
+            //Define top position of inputBox1
+            inputBox1.Top = 50;
+            //Define width of inputBox1.
+            inputBox1.Width = 200;
+            //Define maxmium of inputBox1.
+            inputBox1.Maximum = int.MaxValue;
+            //Define minium of inputBox1.
+            inputBox1.Minimum = 1;
+            //Define default value of inputBox1.
+            inputBox1.Value = defaultValue.Item1;
+            //Create second instance of NumbericUpDown class.
+            NumericUpDown inputBox2 = new NumericUpDown();
+            //Define left position of inputBox2.
+            inputBox2.Left = 250;
+            //Define top position of inputBox2.
+            inputBox2.Top = 50;
+            //Define width of inputBox2.
+            inputBox2.Width = 200;
+            //Define maximum of inputBox2.
+            inputBox2.Maximum = int.MaxValue;
+            //Define minimum of inputBox2.
+            inputBox2.Minimum = 1;
+            //Define default value of inputBox2.
+            inputBox2.Value = defaultValue.Item2;
+            //Create instance of Button class.
+            Button confirm = new Button();
+            //Define left position of confirm.
+            confirm.Left = 150;
+            //Define top position of confirm.
+            confirm.Top = 70;
+            //Define width of confirm.
+            confirm.Width = 100;
+            //Define text of confirm.
+            confirm.Text = "Okay";
+            //Define functionality of confirm when clicked. Closes dialog.
+            confirm.Click += (sender, e) => { dialog.Close(); };
+            //Add confirm to dialog.
+            dialog.Controls.Add(confirm);
+            //Add textLabel1 to dialog.
+            dialog.Controls.Add(textLabel1);
+            //Add textLabel2 to dialog.
+            dialog.Controls.Add(textLabel2);
+            //Add inputBox1 to dialog.
+            dialog.Controls.Add(inputBox1);
+            //Add inputBox2 to dialog.
+            dialog.Controls.Add(inputBox2);
+            //Show dialog.
+            dialog.ShowDialog();
+
+            //Return inputBox1's value casted to an Integer and inputBox2's value casted as an Integer as well, in the form of a tuple.
+            return ((int)inputBox1.Value, (int)inputBox2.Value);
+
+        }
+        /*
+         * The loadUserSettings function serves to load the user's saved settings.
+         */
+        private void loadUserSettings()
+        {
+            //Create instance of StreamReader class using the "default.config" file.
+            StreamReader read = new StreamReader("user.config");
+
+            //Create instance of TypeConverter class in order to convert String to Color.
+            TypeConverter typeConverter = TypeDescriptor.GetConverter(typeof(Color));
+
+            //Parse setting to width variable.
+            int.TryParse(read.ReadLine(), out int width);
+            //Parse setting to height variable.
+            int.TryParse(read.ReadLine(), out int height);
+            //Parse setting to timing variable.
+            int.TryParse(read.ReadLine(), out int timing);
+            //Convert string to Color and assign value to gridColor.
+            gridColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to graphics panel back color variable.
+            graphicsPanel1.BackColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to cellColor.
+            cellColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to dedCellColor.
+            deadCellColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to hudColorFill.
+            hudColorFill = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to hudColorOutline.
+            hudColorOutline = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Parse setting to toroidalBoundary variable from the Universe class.
+            bool.TryParse(read.ReadLine(), out universe.toroidalBoundary);
+
+            //Create new Universe based on settings.
+            universe = new Universe(0, width, height);
+            //Reset generations count
+            generations = 0;
+            //Assign time setting to Form.
+            ms = timing;
+
+            //Close read instance.
+            read.Close();
+        }
+        /*
+         * The checkSettingsFiles function serves to check and validate the required files for the settings.
+         */
+        private void checkSettingsFiles()
+        {
+            //Check if default.config exists. If no, create the file and write the default settings to it.
+            if (!File.Exists("default.config"))
+            {
+                //Create instance of StreamWriter class and use "user.config" file
+                StreamWriter write = new StreamWriter("default.config");
+
+                //Write the width of the Universe to the file.
+                write.WriteLine(25);
+                //Write the height of the Universe to file.
+                write.WriteLine(25);
+                //Write timing of the Form to file.
+                write.WriteLine(100);
+                //Write the color setting of the grid to file.
+                write.WriteLine("Color [Black]");
+                //Write the color setting of the background to file.
+                write.WriteLine("Color [Window]");
+                //Write the color setting of alive cells to file.
+                write.WriteLine("Color [Gray]");
+                //Write the color setting of dead cells to file.
+                write.WriteLine("Color [White]");
+                //Write the color setting of the HUD fill to file.
+                write.WriteLine("Color [Crimson]");
+                //Write the color setting of the HUD outline to file.
+                write.WriteLine("Color [Black]");
+                //Write the boundary type setting to file.
+                write.WriteLine("True");
+
+                //Close write instance.
+                write.Close();
+            }
+
+            //Check if user.config exists. If no, create the file and write the default settings to it.
+            if (!File.Exists("user.config"))
+            {
+                //Create instance of StreamWriter class and use "user.config" file
+                StreamWriter write = new StreamWriter("user.config");
+
+                //Write the width of the Universe to the file.
+                write.WriteLine(25);
+                //Write the height of the Universe to file.
+                write.WriteLine(25);
+                //Write timing of the Form to file.
+                write.WriteLine(100);
+                //Write the color setting of the grid to file.
+                write.WriteLine("Color [Black]");
+                //Write the color setting of the background to file.
+                write.WriteLine("Color [Window]");
+                //Write the color setting of alive cells to file.
+                write.WriteLine("Color [Gray]");
+                //Write the color setting of dead cells to file.
+                write.WriteLine("Color [White]");
+                //Write the color setting of the HUD fill to file.
+                write.WriteLine("Color [Crimson]");
+                //Write the color setting of the HUD outline to file.
+                write.WriteLine("Color [Black]");
+                //Write the boundary type setting to file.
+                write.WriteLine("True");
+
+                //Close write instance.
+                write.Close();
+            }
+
+            //Check if previous.config exists. If no, create the file and wwrite the default settings to it.
+            if (!File.Exists("previous.config"))
+            {
+                //Create instance of StreamWriter class and use "user.config" file
+                StreamWriter write = new StreamWriter("default.config");
+
+                //Write the width of the Universe to the file.
+                write.WriteLine(25);
+                //Write the height of the Universe to file.
+                write.WriteLine(25);
+                //Write timing of the Form to file.
+                write.WriteLine(100);
+                //Write the color setting of the grid to file.
+                write.WriteLine("Black");
+                //Write the color setting of the background to file.
+                write.WriteLine("Window");
+                //Write the color setting of alive cells to file.
+                write.WriteLine("Gray");
+                //Write the color setting of dead cells to file.
+                write.WriteLine("White");
+                //Write the color setting of the HUD fill to file.
+                write.WriteLine("Crimson");
+                //Write the color setting of the HUD outline to file.
+                write.WriteLine("Black");
+                //Write the boundary type setting to file.
+                write.WriteLine("True");
+
+                //Close write instance.
+                write.Close();
+            }
+        }
+
+        /*
+         * The loadDefaultSettings function serves to load the default settings of the application.
+         */
+        private void loadDefaultSettings()
+        {
+            //Create instance of StreamReader class using the "default.config" file.
+            StreamReader read = new StreamReader("default.config");
+
+            //Create instance of TypeConverter class in order to convert String to Color.
+            TypeConverter typeConverter = TypeDescriptor.GetConverter(typeof(Color));
+
+            //Parse setting to width variable.
+            int.TryParse(read.ReadLine(), out int width);
+            //Parse setting to height variable.
+            int.TryParse(read.ReadLine(), out int height);
+            //Parse setting to timing variable.
+            int.TryParse(read.ReadLine(), out int timing);
+            //Convert string to Color and assign value to gridColor.
+            gridColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to graphics panel back color variable.
+            graphicsPanel1.BackColor = (Color) typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to cellColor.
+            cellColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to dedCellColor.
+            deadCellColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to hudColorFill.
+            hudColorFill = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to hudColorOutline.
+            hudColorOutline = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Parse setting to toroidalBoundary variable from the Universe class.
+            bool.TryParse(read.ReadLine(), out universe.toroidalBoundary);
+
+            //Create new Universe based on settings.
+            universe = new Universe(0, width, height);
+            //Assign time setting to Form.
+            ms = timing;
+            //Reset generations count
+            generations = 0;
+
+            //Close read instance.
+            read.Close();
+
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
+        }
+
+        /*
+         * The reloadPreviousSettings function serves to load the user's previously overwritten settings.
+         */
+        private void reloadPreviousSettings()
+        {
+            //Create instance of StreamReader class using the "previous.config" file.
+            StreamReader read = new StreamReader("previous.config");
+
+            //Create instance of TypeConverter class in order to convert String to Color.
+            TypeConverter typeConverter = TypeDescriptor.GetConverter(typeof(Color));
+
+            //Parse setting to width variable.
+            int.TryParse(read.ReadLine(), out int width);
+            //Parse setting to height variable.
+            int.TryParse(read.ReadLine(), out int height);
+            //Parse setting to timing variable.
+            int.TryParse(read.ReadLine(), out int timing);
+            //Convert string to Color and assign value to gridColor.
+            gridColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Conver string to Color and assign value to graphics panel back color variable.
+            graphicsPanel1.BackColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to cellColor.
+            cellColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to dedCellColor.
+            deadCellColor = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to hudColorFill.
+            hudColorFill = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Convert string to Color and assign value to hudColorOutline.
+            hudColorOutline = (Color)typeConverter.ConvertFromString(read.ReadLine());
+            //Parse setting to toroidalBoundary variable from the Universe class.
+            bool.TryParse(read.ReadLine(), out universe.toroidalBoundary);
+
+            //Create new Universe based on settings.
+            universe = new Universe(0, width, height);
+            //Assign time setting to Form.
+            ms = timing;
+            //Reset generations count
+            generations = 0;
+
+            //Close read instance.
+            read.Close();
+
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
+
+        }
+
+        /*
+         * The savePreviousSettings function serves to save the user's settings previously overwritten.
+         */
+        private void savePreviousSettings()
+        {
+            //Copy the user config file to the previous.config file.
+            File.Copy("user.config", "previous.config", true);
+        }
+
+        /*
+         * The saveSettings function serves to save the user's settings whenever called.
+         */
+        private void saveSettings()
+        {
+            //Save previous settings.
+            savePreviousSettings();
+
+            //Create instance of StreamWriter class and use "user.config" file
+            StreamWriter write = new StreamWriter("user.config");
+
+            //Write the width of the Universe to the file.
+            write.WriteLine(universe.universe.GetLength(0));
+            //Write the height of the Universe to file.
+            write.WriteLine(universe.universe.GetLength(1));
+            //Write timing of the Form to file.
+            write.WriteLine(ms);
+            //Write the color setting of the grid to file.
+            write.WriteLine(gridColor.ToKnownColor());
+            //Write the color setting of the background to file.
+            write.WriteLine(graphicsPanel1.BackColor.ToKnownColor());
+            //Write the color setting of alive cells to file.
+            write.WriteLine(cellColor.ToKnownColor());
+            //Write the color setting of dead cells to file.
+            write.WriteLine(deadCellColor.ToKnownColor());
+            //Write the color setting of the HUD fill to file.
+            write.WriteLine(hudColorFill.ToKnownColor());
+            //Write the color setting of the HUD outline to file.
+            write.WriteLine(hudColorOutline.ToKnownColor());
+            //Write the boundary type setting to file.
+            write.WriteLine(universe.toroidalBoundary);
+
+            //Close write instance.
+            write.Close();
+
         }
 
         /*
@@ -604,150 +1029,6 @@ namespace SageHopkins_PP_1_Game_Of_Life
         }
 
         /*
-         * The intDialog function serves to create a dialog which can be customized and reused. 
-         */
-        private int intDialog(string label, string title, int defaultValue)
-        {
-            //Create instance of the Form class.
-            Form dialog = new Form();
-            //Define dialog title.
-            dialog.Text = title;
-            //Define width of dialog.
-            dialog.Width = 500;
-            //Define height of dialog.
-            dialog.Height = 200;
-            //Create instance of Label class.
-            Label textLabel = new Label();
-            //Define left position of textLabel.
-            textLabel.Left = 50;
-            //Define top position of textLabel.
-            textLabel.Top = 20;
-            //Define text of textLabel.
-            textLabel.Text = label;
-            //Create instance of NumbericUpDown class.
-            NumericUpDown inputBox = new NumericUpDown();
-            //Define left position of inputBox.
-            inputBox.Left = 50;
-            //Define top position of inputBox.
-            inputBox.Top = 50;
-            //Define width of inputBox.
-            inputBox.Width = 400;
-            //Define Maximum value of inputBox.
-            inputBox.Maximum = int.MaxValue;
-            //Define default value of inputBox.
-            inputBox.Value = defaultValue;
-            //Create instance of Button class.
-            Button confirm = new Button();
-            //Define left position of confirm.
-            confirm.Left = 350;
-            //Define top position of confirm.
-            confirm.Top = 70;
-            //Define width of confirm.
-            confirm.Width = 100;
-            //Define text of confirm.
-            confirm.Text = "Okay";
-            //Define functionality of confirm when clicked. Closes dialog.
-            confirm.Click += (sender, e) => { dialog.Close(); };
-            //Add confirm instance to dialog.
-            dialog.Controls.Add(confirm);
-            //Add textLabel instance to dialog.
-            dialog.Controls.Add(textLabel);
-            //Add inputBox instance to dialog.
-            dialog.Controls.Add(inputBox);
-            //Show Dialog.
-            dialog.ShowDialog();
-
-            //Return inputBox's value casted to an Integer.
-            return (int)inputBox.Value;
-        }
-        /*
-         * The tupleDialog function serves to create a dialog which can be customized and reused. It allows the input of two seprate values.
-         */
-        private (int, int) tupleDialog(string label1, string label2, string title, (int, int) defaultValue)
-        {
-            //Create instance of Form class.
-            Form dialog = new Form();
-            //Define text of dialog.
-            dialog.Text = title;
-            //Define width of dialog.
-            dialog.Width = 500;
-            //Define height of dialog.
-            dialog.Height = 200;
-            //Create instance of Label class.
-            Label textLabel1 = new Label();
-            //Define left position of textLabel1.
-            textLabel1.Left = 50;
-            //Define top position of textLabel1.
-            textLabel1.Top = 20;
-            //Define text of textLabel1.
-            textLabel1.Text = label1;
-            //Create second instance of Label class.
-            Label textLabel2 = new Label();
-            //Define left position of textLabel2.
-            textLabel2.Left = 250;
-            //Define top position of textLabel2.
-            textLabel2.Top = 20;
-            //Define text of textLabel2.
-            textLabel2.Text = label2;
-            //Create instance of NumericUpDown class.
-            NumericUpDown inputBox1 = new NumericUpDown();
-            //Define left position of inputBox1.
-            inputBox1.Left = 50;
-            //Define top position of inputBox1
-            inputBox1.Top = 50;
-            //Define width of inputBox1.
-            inputBox1.Width = 200;
-            //Define maxmium of inputBox1.
-            inputBox1.Maximum = int.MaxValue;
-            //Define minium of inputBox1.
-            inputBox1.Minimum = 1;
-            //Define default value of inputBox1.
-            inputBox1.Value = defaultValue.Item1;
-            //Create second instance of NumbericUpDown class.
-            NumericUpDown inputBox2 = new NumericUpDown();
-            //Define left position of inputBox2.
-            inputBox2.Left = 250;
-            //Define top position of inputBox2.
-            inputBox2.Top = 50;
-            //Define width of inputBox2.
-            inputBox2.Width = 200;
-            //Define maximum of inputBox2.
-            inputBox2.Maximum = int.MaxValue;
-            //Define minimum of inputBox2.
-            inputBox2.Minimum = 1;
-            //Define default value of inputBox2.
-            inputBox2.Value = defaultValue.Item2;
-            //Create instance of Button class.
-            Button confirm = new Button();
-            //Define left position of confirm.
-            confirm.Left = 150;
-            //Define top position of confirm.
-            confirm.Top = 70;
-            //Define width of confirm.
-            confirm.Width = 100;
-            //Define text of confirm.
-            confirm.Text = "Okay";
-            //Define functionality of confirm when clicked. Closes dialog.
-            confirm.Click += (sender, e) => { dialog.Close(); };
-            //Add confirm to dialog.
-            dialog.Controls.Add(confirm);
-            //Add textLabel1 to dialog.
-            dialog.Controls.Add(textLabel1);
-            //Add textLabel2 to dialog.
-            dialog.Controls.Add(textLabel2);
-            //Add inputBox1 to dialog.
-            dialog.Controls.Add(inputBox1);
-            //Add inputBox2 to dialog.
-            dialog.Controls.Add(inputBox2);
-            //Show dialog.
-            dialog.ShowDialog();
-
-            //Return inputBox1's value casted to an Integer and inputBox2's value casted as an Integer as well, in the form of a tuple.
-            return ((int)inputBox1.Value, (int)inputBox2.Value);
-
-        }
-
-        /*
          * The timingButton_Click function serves display an intDialog in order to update the timing of timer.Interval.
          */
         private void timingButton_Click(object sender, EventArgs e)
@@ -765,6 +1046,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
         {
             //Create new instance of the Universe class based on the inputted values from the intDialog.
             universe = new Universe(intDialog("Seed", "Enter seed value", universe.seed), universe.universe.GetLength(0), universe.universe.GetLength(1));
+            //Reset generations count
+            generations = 0;
         }
 
         /*
@@ -774,6 +1057,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
         {
             //Create new instance of the Universe class based on the existing seed defined in the Universe class.
             universe = new Universe(universe.seed, universe.universe.GetLength(0), universe.universe.GetLength(1));
+            //Reset generations count
+            generations = 0;
         }
 
         /*
@@ -783,6 +1068,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
         {
             //Create new instance of the Universe class based on a seed generated based on the current time.
             universe = new Universe(-1, universe.universe.GetLength(0), universe.universe.GetLength(1));
+            //Reset generations count
+            generations = 0;
         }
 
         /*
@@ -805,6 +1092,7 @@ namespace SageHopkins_PP_1_Game_Of_Life
             (int, int) size = tupleDialog("Width", "Height", "Universe Size", (universe.universe.GetLength(0), universe.universe.GetLength(1)));
             //Create new instance of the Universe based on the size variable.
             universe = new Universe(universe.seed, size.Item1, size.Item2);
+
         }
 
         /*
@@ -818,6 +1106,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             color.ShowDialog();
             //Assign the color selected by the user to the gridColor variable.
             gridColor = color.Color;
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
         }
 
         /*
@@ -831,6 +1121,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             color.ShowDialog();
             //Assign the color selected by the user to the graphics panel backcolor.
             this.graphicsPanel1.BackColor = color.Color;
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
         }
 
         /*
@@ -844,6 +1136,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             color.ShowDialog();
             //Assign the color selected by the user to the cellColor variable.
             cellColor = color.Color;
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
         }
 
         /*
@@ -857,6 +1151,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             color.ShowDialog();
             //Assign the color selected by the user to the deadCellColor variable.
             deadCellColor = color.Color;
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
         }
 
         /*
@@ -870,6 +1166,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             color.ShowDialog();
             //Assign the color selected by the user to the hudColorFill variable.
             hudColorFill= color.Color;
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
         }
 
         /*
@@ -883,6 +1181,8 @@ namespace SageHopkins_PP_1_Game_Of_Life
             color.ShowDialog();
             //Assign the color selected by the user to the hudColorOutline variable.
             hudColorOutline = color.Color;
+            //Invalidate graphics panel in order to render the updated state.
+            graphicsPanel1.Invalidate();
         }
 
         /*
@@ -905,6 +1205,21 @@ namespace SageHopkins_PP_1_Game_Of_Life
             }
             //Toggle the value of the torodialBoundary from the Universe class.
             universe.toroidalBoundary = !universe.toroidalBoundary;
+        }
+
+        private void saveSettingsButton_Click(object sender, EventArgs e)
+        {
+            saveSettings();
+        }
+
+        private void reloadSettingsButton_Click(object sender, EventArgs e)
+        {
+            reloadPreviousSettings();
+        }
+
+        private void restoreSettingButton_Click(object sender, EventArgs e)
+        {
+            loadDefaultSettings();
         }
     }
 }
